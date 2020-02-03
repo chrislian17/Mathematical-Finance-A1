@@ -1,0 +1,191 @@
+---
+title: "APM466 A1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Q4 YTM
+```{r}
+library(jrvFinance)
+data <- read.csv('Bonds.csv')
+yield <- matrix(nrow=10,ncol=11)
+settle.date = c("2020-01-02", "2020-01-03", "2020-01-06", "2020-01-07", "2020-01-08", "2020-01-09", "2020-01-10", "2020-01-11", "2020-01-12", "2020-01-13")
+mature.date = c("2020-03-01","2020-09-01","2021-03-01","2021-09-01","2022-03-01","2022-09-01","2023-03-01","2023-09-01","2024-03-01","2024-09-01","2025-03-01")
+coupon.rate <- c(0.015,0.0075,0.0075,0.0075,0.0050,0.0275,0.0175,0.0150,0.0225,0.0150,0.0125)
+
+price.matrix <- matrix(nrow=10,ncol=11)
+price.matrix[1,] = c(99.85,99.26,98.89,98.41,97.57,102.53,100.31,99.48,102.52,98.72,98.24)
+price.matrix[2,] = c(99.86,99.28,98.93,98.45,97.63,102.59,100.42,99.59,102.65,98.95,98.43)
+price.matrix[3,] = c(99.86,99.28,98.95,98.49,97.66,102.62,100.48,99.65,102.75,99.29,98.58)
+price.matrix[4,] = c(99.86,99.27,98.94,98.46,97.65,102.59,100.45,99.61,102.58,99.11,98.48)
+price.matrix[5,] = c(99.86,99.28,98.92,98.46,97.64,102.58,100.44,99.62,102.68,99.25,98.48)
+price.matrix[6,] = c(99.86,99.28,98.92,98.43,97.6,102.52,100.35,99.54,102.53,98.99,98.3)
+price.matrix[7,] = c(99.86,99.28,98.88,98.43,97.61,102.52,100.31,99.53,102.47,99.03,98.25)
+price.matrix[8,] = c(99.86,99.27,98.9,98.38,97.57,102.46,100.27,99.44,102.46,99.06,98.24)
+price.matrix[9,] = c(99.86,99.28,98.9,98.41,97.58,102.47,100.31,99.49,102.54,98.99,98.34)
+price.matrix[10,] = c(99.86,99.3,98.93,98.42,97.61,102.51,100.38,99.56,102.64,99.1,98.47)
+
+for (i in 1:10)
+{
+  for (j in 1:11)
+{
+    yield[i,j]=bond.yield(settle = settle.date[i], mature.date[j], coupon = coupon.rate[j], price = price.matrix[i,j], freq = 2, comp.freq = Inf, redemption_value = 100)
+}
+}
+
+yearFrac <- matrix(nrow=10, ncol=11)
+for (i in 1:10)
+{
+  for (j in 1:11)
+  {
+    yearFrac[i,j] <- yearFraction(settle.date[i],mature.date[j],freq = 2)
+  }
+}
+
+plot(yearFrac[1,],yield[1,],type="l", col=1, xlab="Periods", ylab="Yield", main="YTMs of 10 Bonds wrt 10 days", xlim = c(0,5), ylim = c(0.015, 0.027))
+for (i in 2:10)
+{
+  lines(yearFrac[i,],yield[i,], col=i, type="l")
+}
+legend("topright",legend=c("Day1", "Day2", "Day3", "Day4", "Day5", "Day6", "Day7", "Day8", "Day9", "Day10"), col=1:10, lty=1, cex=0.8)
+
+ytm.data.frame <- data.frame(matrix(nrow=10,ncol=11))
+colnames(ytm.data.frame) <- c("2020Mar01","2020Sep01","2021Mar01","2021Sep01","2022Mar01","2022Sep01","2023Mar01","2023Sep01","2024Mar01","2024Sep01","2025Mar01")
+rownames(ytm.data.frame) <- c("Day1","Day2","Day3","Day4","Day5","Day6","Day7","Day8","Day9","Day10")
+for (i in 1:10)
+{
+    ytm.data.frame$`2020Mar01`[i] = yield[i,1]
+    ytm.data.frame$`2020Sep01`[i] = yield[i,2]
+    ytm.data.frame$`2021Mar01`[i] = yield[i,3]
+    ytm.data.frame$`2021Sep01`[i] = yield[i,4]
+    ytm.data.frame$`2022Mar01`[i] = yield[i,5]
+    ytm.data.frame$`2022Sep01`[i] = yield[i,6]
+    ytm.data.frame$`2023Mar01`[i] = yield[i,7]
+    ytm.data.frame$`2023Sep01`[i] = yield[i,8]
+    ytm.data.frame$`2024Mar01`[i] = yield[i,9]
+    ytm.data.frame$`2024Sep01`[i] = yield[i,10]
+    ytm.data.frame$`2025Mar01`[i] = yield[i,11]
+}
+
+```
+
+Q4b Spot Rate
+```{r}
+library(jrvFinance)
+dirty.price.matrix <- matrix(nrow=10,ncol=11)
+cash.flow.matrix <- matrix(nrow=10,ncol=11)
+mature.period.matrix <- matrix(nrow=10,ncol=11)
+
+for (i in 1:10)
+{
+  for (j in 1:11)
+  {
+    dirty.price.matrix[i,j]=bond.TCF(settle = settle.date[i], mature.date[j], coupon = coupon.rate[j], freq = 2)$accrued + price.matrix[i,j]
+    cash.flow.matrix[i,j]=bond.TCF(settle = settle.date[i], mature.date[j], coupon = coupon.rate[j], freq = 2)$cf[1]
+  }
+}
+
+cash.flow <- cash.flow.matrix[1,]
+spot.rate <- matrix(nrow=10,ncol=11)
+
+for (i in 1:10)
+{
+  spot.rate[i,1] <- log(dirty.price.matrix[i,1]/(cash.flow[1]))*(-1/yearFrac[i,1])
+  
+  spot.rate[i,2] <- log((dirty.price.matrix[i,2]-cash.flow[2]*exp(-spot.rate[i,1]*yearFrac[i,1]))/(cash.flow[2]+100))*(-1/yearFrac[i,2])
+  
+  spot.rate[i,3] <- log((dirty.price.matrix[i,3]-cash.flow[3]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])))/(cash.flow[3]+100))*(-1/yearFrac[i,3])
+  
+  spot.rate[i,4] <- log((dirty.price.matrix[i,4]-cash.flow[4]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])))/(cash.flow[4]+100))*(-1/yearFrac[i,4])
+  
+  spot.rate[i,5] <- log((dirty.price.matrix[i,5]-cash.flow[5]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])))/(cash.flow[5]+100))*(-1/yearFrac[i,5])
+  
+  spot.rate[i,6] <- log((dirty.price.matrix[i,6]-cash.flow[6]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])))/(cash.flow[6]+100))*(-1/yearFrac[i,6])
+  
+  spot.rate[i,7] <- log((dirty.price.matrix[i,7]-cash.flow[7]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])+exp(-spot.rate[i,6]*yearFrac[i,6])))/(cash.flow[7]+100))*(-1/yearFrac[i,7])
+  
+  spot.rate[i,8] <- log((dirty.price.matrix[i,8]-cash.flow[8]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])+exp(-spot.rate[i,6]*yearFrac[i,6])+exp(-spot.rate[i,7]*yearFrac[i,7])))/(cash.flow[8]+100))*(-1/yearFrac[i,8])
+  
+  spot.rate[i,9] <- log((dirty.price.matrix[i,9]-cash.flow[9]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[i,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])+exp(-spot.rate[i,6]*yearFrac[i,6])+exp(-spot.rate[i,7]*yearFrac[i,7])+exp(-spot.rate[i,8]*yearFrac[i,8])))/(cash.flow[9]+100))*(-1/yearFrac[i,9])
+  
+  spot.rate[i,10] <- log((dirty.price.matrix[i,10]-cash.flow[10]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[1,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])+exp(-spot.rate[i,6]*yearFrac[i,6])+exp(-spot.rate[i,7]*yearFrac[i,7])+exp(-spot.rate[i,8]*yearFrac[i,8])+exp(-spot.rate[i,9]*yearFrac[i,9])))/(cash.flow[10]+100))*(-1/yearFrac[i,10])
+  
+  spot.rate[i,11] <- log((dirty.price.matrix[i,11]-cash.flow[11]*(exp(-spot.rate[i,1]*yearFrac[i,1])+exp(-spot.rate[1,2]*yearFrac[i,2])+exp(-spot.rate[i,3]*yearFrac[i,3])+exp(-spot.rate[i,4]*yearFrac[i,4])+exp(-spot.rate[i,5]*yearFrac[i,5])+exp(-spot.rate[i,6]*yearFrac[i,6])+exp(-spot.rate[i,7]*yearFrac[i,7])+exp(-spot.rate[i,8]*yearFrac[i,8])+exp(-spot.rate[i,9]*yearFrac[i,9])+exp(-spot.rate[i,10]*yearFrac[i,10])))/(cash.flow[11]+100))*(-1/yearFrac[i,11]) 
+  
+}
+
+plot(yearFrac[1,],spot.rate[1,],type="l", col=1, xlab="Periods", ylab="Spot Rate", main="Spot Rates of 10 Bonds wrt 10 days", xlim = c(0,5), ylim = c(0.0155, 0.0253))
+for (i in 2:10)
+{
+  lines(yearFrac[i,],spot.rate[i,], col=i, type="l")
+}
+legend("topright",legend=c("Day1", "Day2", "Day3", "Day4", "Day5", "Day6", "Day7", "Day8", "Day9", "Day10"), col=1:10, lty=1, cex=0.8)
+```
+
+Q4c Forward Rate
+```{r}
+forward.rate <- matrix(nrow=10, ncol=4)
+new.spot.rate <- matrix(nrow=10, ncol=5)
+for (i in 1:4)
+{
+  j <- i*2 + 1
+  new.spot.rate[,i] <- spot.rate[,j]
+}
+
+new.spot.rate[,5] <- spot.rate[,10]*1/2 + spot.rate[,11]*1/2
+
+new.yearFrac <- matrix(nrow=10, ncol=5)
+for (i in 1:5)
+{
+  j <- i*2 - 1
+  new.yearFrac[,i] <- yearFrac[,j] + 1
+}
+
+for (i in 1:10)
+{
+  for (j in 1:4)
+  {
+    forward.rate[i,j] <- (new.spot.rate[i,j+1]*new.yearFrac[i,j+1]-new.spot.rate[i,1]*new.yearFrac[i,1])/j
+  }
+}
+
+plot(new.yearFrac[1:10,2:5][1,],forward.rate[1,],type="l", col=1, xlab="Periods", ylab="Forward Rate", main="Forward Rates of 10 Bonds from 2-5 years", xlim = c(1.5,5.5), ylim = c(0.0151,0.0168))
+
+for (i in 2:10)
+{
+  lines(new.yearFrac[1:10,2:5][1,],forward.rate[i,], col=i, type="l")
+}
+
+legend("topleft",legend=c("Day1", "Day2", "Day3", "Day4", "Day5", "Day6", "Day7", "Day8", "Day9", "Day10"), col=1:10, lty=1, cex=0.8)
+```
+
+Q5 Covariance Matrix
+```{r}
+new.yield <- matrix(nrow=10, ncol=5)
+for (i in 1:5)
+{
+  j <- i*2-1
+  new.yield[,i] <- yield[,j]
+}
+yield.log.ret <- log(new.yield[2:10,]/new.yield[1:9,])
+yield.cov <- cov(yield.log.ret)
+yield.cov
+
+forward.log.ret <- log(forward.rate[2:10,]/forward.rate[1:9,])
+fr.cov <- cov(forward.log.ret)
+fr.cov
+```
+
+Q6
+```{r}
+eigen(yield.cov)
+eigen(yield.cov)$value
+
+eigen(fr.cov)
+eigen(fr.cov)$values
+```
+
+
